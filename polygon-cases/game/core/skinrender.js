@@ -33,6 +33,60 @@
     return Math.round(v * 100) / 100;
   }
 
+  /*
+   * Скругление углов многоугольника.
+   *
+   * Это не косметика. Многоугольник с острыми углами читается как
+   * деталь конструктора: у настоящей вещи нет ни одного идеально
+   * острого ребра — везде фаска или радиус. Одна эта функция превращает
+   * набор плашек в предмет, и применяется она сразу ко всем моделям,
+   * поэтому геометрию править не пришлось.
+   *
+   * Радиус срезается по половине короткой стороны: иначе на узких
+   * деталях (планка, прорезь) дуги наложились бы друг на друга и контур
+   * вывернулся бы наизнанку.
+   */
+  function roundedPath(pts, radius) {
+    var len = pts.length;
+    if (len < 3) return '';
+    var d = '';
+
+    for (var i = 0; i < len; i++) {
+      var prev = pts[(i - 1 + len) % len];
+      var cur = pts[i];
+      var next = pts[(i + 1) % len];
+
+      var d1x = prev[0] - cur[0], d1y = prev[1] - cur[1];
+      var d2x = next[0] - cur[0], d2y = next[1] - cur[1];
+      var l1 = Math.sqrt(d1x * d1x + d1y * d1y) || 1;
+      var l2 = Math.sqrt(d2x * d2x + d2y * d2y) || 1;
+
+      var r = Math.min(radius, l1 / 2, l2 / 2);
+      var p1x = cur[0] + d1x / l1 * r, p1y = cur[1] + d1y / l1 * r;
+      var p2x = cur[0] + d2x / l2 * r, p2y = cur[1] + d2y / l2 * r;
+
+      d += (i === 0 ? 'M' : 'L') + n(p1x) + ' ' + n(p1y) +
+        'Q' + n(cur[0]) + ' ' + n(cur[1]) + ' ' + n(p2x) + ' ' + n(p2y);
+    }
+    return d + 'Z';
+  }
+
+  /*
+   * Готовые пути модели. Геометрия задана кривыми прямо в weapons.js;
+   * старая форма записи (список вершин) тоже поддерживается — тогда углы
+   * скругляются на лету.
+   */
+  function pathsOf(weapon) {
+    if (weapon.paths) return weapon.paths;
+    weapon.paths = weapon.parts.map(function (part) {
+      return {
+        role: part.role,
+        d: part.d || roundedPath(part.pts, part.r !== undefined ? part.r : 2.6)
+      };
+    });
+    return weapon.paths;
+  }
+
   /* Угол в координаты градиента по диагонали кадра. */
   function gradientVector(angle) {
     var rad = angle * Math.PI / 180;
@@ -132,21 +186,39 @@
       return { defs: tile(id, size, v.angle, body), fill: 'url(#' + id + ')' };
     },
 
-    /* Камуфляж пятнами: скруглённые кляксы в три цвета. */
+    /*
+     * Камуфляж. Настоящий камуфляж — это не «кружочки на фоне»:
+     * пятна вытянуты, перекрываются и различаются по тону слабо, из-за
+     * чего рисунок читается как единое покрытие, а не как горошек.
+     * Поэтому здесь ломаные многоугольники, а не эллипсы, приплюснутые
+     * по вертикали, и всего два основных тона плюс редкий третий.
+     */
     camo: function (uid, c, v, rnd) {
       var id = uid + 'p';
-      var size = 44 * v.scale;
+      var size = 46 * v.scale;
       var body = '<rect width="' + n(size) + '" height="' + n(size) + '" fill="' + c[1] + '"/>';
-      var count = Math.round(7 * v.density);
+      var count = Math.round(9 * v.density);
+
+      function blob(cx, cy, scale, col) {
+        var steps = 7 + Math.floor(rnd() * 3);
+        var pts = [];
+        for (var k = 0; k < steps; k++) {
+          var a = (k / steps) * Math.PI * 2;
+          var rr = size * scale * (0.55 + rnd() * 0.75);
+          pts.push(n(cx + Math.cos(a) * rr * 1.5) + ',' + n(cy + Math.sin(a) * rr * 0.62));
+        }
+        return '<polygon points="' + pts.join(' ') + '" fill="' + col + '"/>';
+      }
+
       for (var i = 0; i < count; i++) {
         var cx = rnd() * size, cy = rnd() * size;
-        var rx = size * (0.1 + rnd() * 0.16), ry = size * (0.08 + rnd() * 0.14);
-        var col = i % 3 === 0 ? c[0] : (i % 3 === 1 ? c[2] : c[3]);
-        /* дублируем пятно по краям тайла, чтобы шов не читался */
-        body += '<ellipse cx="' + n(cx) + '" cy="' + n(cy) + '" rx="' + n(rx) + '" ry="' + n(ry) +
-          '" fill="' + col + '" transform="rotate(' + n(rnd() * 90) + ' ' + n(cx) + ' ' + n(cy) + ')"/>';
-        body += '<ellipse cx="' + n(cx - size) + '" cy="' + n(cy) + '" rx="' + n(rx) + '" ry="' + n(ry) + '" fill="' + col + '"/>';
-        body += '<ellipse cx="' + n(cx) + '" cy="' + n(cy - size) + '" rx="' + n(rx) + '" ry="' + n(ry) + '" fill="' + col + '"/>';
+        var scale = 0.09 + rnd() * 0.09;
+        var pick = rnd();
+        var col = pick < 0.45 ? c[0] : (pick < 0.85 ? c[2] : c[3]);
+        /* тот же контур повторяем по краям тайла, иначе шов виден */
+        [[0, 0], [-size, 0], [0, -size], [-size, -size]].forEach(function (o) {
+          body += blob(cx + o[0], cy + o[1], scale, col);
+        });
       }
       return { defs: tile(id, size, 0, body), fill: 'url(#' + id + ')' };
     },
@@ -169,17 +241,31 @@
       return { defs: tile(id, size, v.angle * 0.2, body), fill: 'url(#' + id + ')' };
     },
 
-    /* Брызги: круги разного радиуса, редкие крупные и много мелких. */
+    /*
+     * Крап. Раньше это были «просто брызги» — россыпь одинаковых
+     * кружков, которая читалась как горошек. Теперь основа не плоская,
+     * а с переходом, крап мелкий и сгущается пятнами: так выглядит
+     * напылённое покрытие, а не конфетти.
+     */
     splatter: function (uid, c, v, rnd) {
       var id = uid + 'p';
-      var size = 36 * v.scale;
-      var body = '<rect width="' + n(size) + '" height="' + n(size) + '" fill="' + c[0] + '"/>';
-      var count = Math.round(26 * v.density);
-      for (var i = 0; i < count; i++) {
-        var r = size * (0.015 + Math.pow(rnd(), 3) * 0.16);
-        var col = rnd() < 0.25 ? c[3] : (rnd() < 0.5 ? c[2] : c[1]);
-        body += '<circle cx="' + n(rnd() * size) + '" cy="' + n(rnd() * size) + '" r="' + n(r) +
-          '" fill="' + col + '" opacity="' + n(0.55 + rnd() * 0.45) + '"/>';
+      var size = 40 * v.scale;
+      var body = '<rect width="' + n(size) + '" height="' + n(size) + '" fill="' + c[1] + '"/>';
+
+      /* три сгущения на тайл — крап никогда не ложится равномерно */
+      var clusters = 3;
+      for (var k = 0; k < clusters; k++) {
+        var hx = rnd() * size, hy = rnd() * size;
+        var col = k === 0 ? c[0] : (k === 1 ? c[2] : c[3]);
+        var count = Math.round((14 + rnd() * 10) * v.density);
+        for (var i = 0; i < count; i++) {
+          /* гауссоподобный разброс вокруг центра сгущения */
+          var dx = (rnd() + rnd() + rnd() - 1.5) * size * 0.34;
+          var dy = (rnd() + rnd() + rnd() - 1.5) * size * 0.34;
+          var r = size * (0.008 + Math.pow(rnd(), 2.6) * 0.05);
+          body += '<circle cx="' + n(hx + dx) + '" cy="' + n(hy + dy) + '" r="' + n(r) +
+            '" fill="' + col + '" opacity="' + n(0.35 + rnd() * 0.5) + '"/>';
+        }
       }
       return { defs: tile(id, size, 0, body), fill: 'url(#' + id + ')' };
     },
@@ -251,7 +337,7 @@
      * сдержанной: при высокой непрозрачности предмет превращается в
      * мультяшный контур и весь силуэт теряется.
      */
-    var edge = Math.min(0.4, float * 0.55);
+    var edge = Math.min(0.26, float * 0.34);
     body += '<g opacity="' + n(edge) + '">' +
       skinPaths.map(function (p) {
         return p.replace('/>', ' fill="none" stroke="#b0aa9e" stroke-width="' + n(0.8 + float * 2.2) + '"/>');
@@ -270,9 +356,11 @@
     body += scratches;
 
     /* 3. выцветание */
-    if (float > 0.3) {
+    if (float > 0.34) {
+      /* вуаль намеренно слабая: при сильной убитый предмет становится
+         серым, и вся палитра, по которой игрок читает редкость, пропадает */
       body += '<rect width="' + VIEW.w + '" height="' + VIEW.h + '" fill="#6a655c" opacity="' +
-        n(Math.min(0.34, (float - 0.3) * 0.55)) + '"/>';
+        n(Math.min(0.18, (float - 0.34) * 0.3)) + '"/>';
     }
 
     /*
@@ -319,29 +407,50 @@
     var allPaths = [];     // все детали — для общего объёма
 
     /*
-     * Контур на каждой детали — не украшение. Без него плоские
-     * многоугольники сливаются и с фоном витрины, и друг с другом:
-     * предмет читается как набор плашек, а не как вещь. Двойная тёмная
-     * линия на стыке деталей заодно работает как расшивка панелей.
+     * Контур на каждой детали — не украшение. Без него плоские фигуры
+     * сливаются и с фоном витрины, и друг с другом: предмет читается
+     * как набор плашек, а не как вещь. Двойная тёмная линия на стыке
+     * деталей заодно работает как расшивка панелей.
      */
-    var outline = ' stroke="' + metal.outline + '" stroke-width="1.6" stroke-linejoin="round"';
+    var outline = ' stroke="' + metal.outline + '" stroke-width="2" stroke-linejoin="round"';
+    var thin = ' stroke="' + metal.outline + '" stroke-width="0.9" stroke-linejoin="round"';
 
-    weapon.parts.forEach(function (part) {
-      var pts = pointsOf(part.pts);
-      allPaths.push('<polygon points="' + pts + '"/>');
+    /*
+     * Бевел — вторая половина того же приёма. Каждая деталь получает
+     * свой градиент «свет сверху, тень снизу», и деталь перестаёт быть
+     * плоской заливкой. Градиент один на всю страницу: он задан в долях
+     * собственных габаритов элемента (objectBoundingBox), поэтому
+     * подстраивается под каждую деталь сам, и держать по градиенту на
+     * предмет не нужно.
+     */
+    var bevel = ' fill="url(#pgBevel)"';
+
+    pathsOf(weapon).forEach(function (part) {
+      var p = '<path d="' + part.d + '"';
+      if (part.role !== 'cut') allPaths.push(p + '/>');
+
+      if (part.role === 'cut') {
+        /* вырез: перфорация, окно, отверстие под палец. Тень внутрь даёт
+           ощущение толщины материала, без неё дырка выглядит наклейкой */
+        bodyParts.push(p + ' fill="' + metal.outline + '"' + thin + '/>');
+        bodyParts.push(p + ' fill="url(#pgHole)"/>');
+        return;
+      }
+
       if (part.role === 'skin') {
-        bodyParts.push('<polygon points="' + pts + '" fill="' + pat.fill + '"' + outline + '/>');
-        skinPaths.push('<polygon points="' + pts + '"/>');
+        bodyParts.push(p + ' fill="' + pat.fill + '"' + outline + '/>');
+        skinPaths.push(p + '/>');
         /* однотонный паттерн получает свою окантовку изнутри контура */
         if (pat.stroke) {
-          bodyParts.push('<polygon points="' + pts + '" fill="none" stroke="' + pat.stroke +
+          bodyParts.push(p + ' fill="none" stroke="' + pat.stroke +
             '" stroke-width="' + pat.strokeWidth + '"/>');
         }
       } else if (part.role === 'metal') {
-        bodyParts.push('<polygon points="' + pts + '" fill="' + metal.base + '"' + outline + '/>');
+        bodyParts.push(p + ' fill="' + metal.base + '"' + outline + '/>');
       } else {
-        bodyParts.push('<polygon points="' + pts + '" fill="' + metal.light + '"' + outline + '/>');
+        bodyParts.push(p + ' fill="' + metal.light + '"' + outline + '/>');
       }
+      bodyParts.push(p + bevel + '/>');
     });
 
     /* панельные линии: без них крупная плоскость читается как плашка */
@@ -373,16 +482,19 @@
      */
     var shade = '<linearGradient id="' + uid + 's" gradientUnits="userSpaceOnUse" ' +
       'x1="0" y1="' + n(box0.y) + '" x2="0" y2="' + n(box0.y + box0.h) + '">' +
-      '<stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>' +
-      '<stop offset="0.34" stop-color="#ffffff" stop-opacity="0.05"/>' +
-      '<stop offset="0.62" stop-color="#000000" stop-opacity="0.1"/>' +
-      '<stop offset="1" stop-color="#000000" stop-opacity="0.42"/></linearGradient>';
+      '<stop offset="0" stop-color="#ffffff" stop-opacity="0.12"/>' +
+      '<stop offset="0.4" stop-color="#ffffff" stop-opacity="0"/>' +
+      '<stop offset="1" stop-color="#000000" stop-opacity="0.26"/></linearGradient>';
     defs += shade;
 
     var volume = '<clipPath id="' + uid + 'v">' + allPaths.join('') + '</clipPath>' +
       '<g clip-path="url(#' + uid + 'v)"><rect x="' + n(box0.x) + '" y="' + n(box0.y) +
       '" width="' + n(box0.w) + '" height="' + n(box0.h) +
-      '" fill="url(#' + uid + 's)"/></g>';
+      '" fill="url(#' + uid + 's)"/></g>' +
+      /* полировка: узкий блик по верхней трети окрашенных деталей */
+      '<clipPath id="' + uid + 'gl">' + skinPaths.join('') + '</clipPath>' +
+      '<g clip-path="url(#' + uid + 'gl)"><rect x="' + n(box0.x) + '" y="' + n(box0.y) +
+      '" width="' + n(box0.w) + '" height="' + n(box0.h) + '" fill="url(#pgGloss)"/></g>';
 
     /* кадр по габаритам модели: пистолет и винтовка занимают карточку
        одинаково плотно, хотя нарисованы в общей системе координат */
@@ -399,11 +511,49 @@
    * пересчитывать шум сотни раз вместо одного.
    */
   function pageDefs() {
-    return '<svg id="pgDefs" width="0" height="0" aria-hidden="true" focusable="false">' +
+    return '<svg id="pgDefs" width="0" height="0" aria-hidden="true" focusable="false"><defs>' +
+
+      /* зерно износа: один фильтр на всю игру, а не по одному на предмет */
       '<filter id="pgGrain" x="0" y="0" width="100%" height="100%">' +
       '<feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" seed="7" result="n"/>' +
       '<feColorMatrix in="n" type="matrix" values="0 0 0 0 0.72  0 0 0 0 0.70  0 0 0 0 0.64  0 0 0 0.7 0"/>' +
-      '</filter></svg>';
+      '</filter>' +
+
+      /*
+       * Бевел детали. Задан в долях габаритов элемента, поэтому один и
+       * тот же градиент даёт правильный объём и длинному стволу, и
+       * маленькой мушке. Верхняя кромка — блик, нижняя треть — тень,
+       * между ними тонкая тёмная линия: так на вектор ложится ощущение
+       * фаски, ради которого обычно рисуют по три слоя вручную.
+       */
+      '<linearGradient id="pgBevel" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0" stop-color="#ffffff" stop-opacity="0.24"/>' +
+      '<stop offset="0.16" stop-color="#ffffff" stop-opacity="0.24"/>' +
+      '<stop offset="0.16" stop-color="#ffffff" stop-opacity="0.08"/>' +
+      '<stop offset="0.4" stop-color="#ffffff" stop-opacity="0.08"/>' +
+      '<stop offset="0.36" stop-color="#000000" stop-opacity="0"/>' +
+      '<stop offset="0.68" stop-color="#000000" stop-opacity="0"/>' +
+      '<stop offset="0.68" stop-color="#000000" stop-opacity="0.2"/>' +
+      '<stop offset="0.88" stop-color="#000000" stop-opacity="0.2"/>' +
+      '<stop offset="0.88" stop-color="#000000" stop-opacity="0.45"/>' +
+      '<stop offset="1" stop-color="#000000" stop-opacity="0.45"/>' +
+      '</linearGradient>' +
+
+      /* подсветка нижней кромки выреза: материал имеет толщину */
+      '<linearGradient id="pgHole" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0" stop-color="#000000" stop-opacity="0.55"/>' +
+      '<stop offset="0.6" stop-color="#000000" stop-opacity="0"/>' +
+      '<stop offset="1" stop-color="#ffffff" stop-opacity="0.18"/>' +
+      '</linearGradient>' +
+
+      /* мягкий блик вдоль корпуса — «полировка», добавляется поверх */
+      '<linearGradient id="pgGloss" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0.06" stop-color="#ffffff" stop-opacity="0"/>' +
+      '<stop offset="0.2" stop-color="#ffffff" stop-opacity="0.22"/>' +
+      '<stop offset="0.32" stop-color="#ffffff" stop-opacity="0"/>' +
+      '</linearGradient>' +
+
+      '</defs></svg>';
   }
 
   PG.SkinRender = {
