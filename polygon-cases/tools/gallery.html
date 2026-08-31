@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>ПОЛИГОН — полигон генератора скинов</title>
+<style>
+  :root {
+    --bg: #0d1016;
+    --panel: #151a23;
+    --line: #232b38;
+    --text: #d7deea;
+    --dim: #7d8798;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px;
+    background: var(--bg); color: var(--text);
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  h1 { font-size: 18px; margin: 0 0 4px; letter-spacing: .04em; }
+  .sub { color: var(--dim); margin: 0 0 16px; font-size: 13px; }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  button, select {
+    background: var(--panel); color: var(--text);
+    border: 1px solid var(--line); border-radius: 6px;
+    padding: 7px 12px; font: inherit; cursor: pointer;
+  }
+  button:hover { border-color: #3b4759; }
+  .grid {
+    display: grid; gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+  .item {
+    background:
+      radial-gradient(120% 90% at 50% 34%, rgba(120,150,190,.16), rgba(0,0,0,0) 62%),
+      linear-gradient(180deg, #1b2430, #0e1219);
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--rar, #555);
+    border-radius: 8px; padding: 8px 8px 6px;
+    display: flex; flex-direction: column;
+  }
+  .item .skin { width: 100%; height: 66px; display: block; }
+  .name { font-size: 12px; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .meta { color: var(--dim); font-size: 11px; display: flex; justify-content: space-between; gap: 6px; }
+  .meta b { color: var(--rar); font-weight: 600; }
+  .big .item .skin { height: 150px; }
+  .big .grid { grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); }
+  .stat { color: var(--dim); font-size: 12px; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<h1>ПОЛИГОН — полигон генератора скинов</h1>
+<p class="sub">Двести случайных предметов. Ни одного растрового файла: каждый предмет — SVG, собранный из сида.</p>
+
+<div class="bar">
+  <button id="reroll">Другие 200</button>
+  <button id="toggleBig">Крупно / мелко</button>
+  <button id="toggleWear">Показать разброс износа</button>
+  <select id="filter">
+    <option value="">все редкости</option>
+    <option value="0">Стандарт</option>
+    <option value="1">Улучшенный</option>
+    <option value="2">Редкий</option>
+    <option value="3">Элитный</option>
+    <option value="4">Легендарный</option>
+    <option value="5">Реликт</option>
+  </select>
+  <select id="pattern">
+    <option value="">все паттерны</option>
+  </select>
+</div>
+
+<div class="stat" id="stat"></div>
+<div class="grid" id="grid"></div>
+
+<script src="../game/core/rng.js"></script>
+<script src="../game/data/naming.js"></script>
+<script src="../game/data/palettes.js"></script>
+<script src="../game/data/weapons.js"></script>
+<script src="../game/core/skingen.js"></script>
+<script src="../game/core/skinrender.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  document.body.insertAdjacentHTML('afterbegin', PG.SkinRender.pageDefs());
+
+  var RARITY_NAMES = ['Стандарт', 'Улучшенный', 'Редкий', 'Элитный', 'Легендарный', 'Реликт'];
+  var WEAR_NAMES = { pristine: 'Идеальное', mint: 'Почти новое', worn: 'Потёртое', battered: 'Изношенное', ruined: 'Убитое' };
+
+  var grid = document.getElementById('grid');
+  var stat = document.getElementById('stat');
+  var base = 1;
+  var wearMode = false;
+
+  PG.SkinGen.PATTERNS.forEach(function (p) {
+    var o = document.createElement('option');
+    o.value = p; o.textContent = p;
+    document.getElementById('pattern').appendChild(o);
+  });
+
+  function render() {
+    var t0 = performance.now();
+    var rarityFilter = document.getElementById('filter').value;
+    var patternFilter = document.getElementById('pattern').value;
+    var html = [];
+    var shown = 0;
+    var i = 0;
+    var guard = 0;
+
+    while (shown < 200 && guard < 20000) {
+      guard++;
+      var seed = base * 100003 + i;
+      i++;
+      var opts = {};
+      /* режим разброса износа: один дизайн, разные float */
+      if (wearMode) {
+        seed = base * 100003 + Math.floor(shown / 5);
+        opts.float = (shown % 5) * 0.245 + 0.02;
+      }
+      var skin = PG.SkinGen.generateSkin(seed, opts);
+      if (rarityFilter !== '' && skin.rarity !== +rarityFilter) continue;
+      if (patternFilter !== '' && skin.patternId !== patternFilter) continue;
+      shown++;
+
+      var color = PG.PALETTES.rarityColors[skin.rarity];
+      html.push(
+        '<div class="item" style="--rar:' + color + '">' +
+        PG.SkinRender.svg(skin, { detail: document.body.classList.contains('big'), uid: 'x' + shown }) +
+        '<div class="name">' + skin.name + '</div>' +
+        '<div class="meta"><b>' + RARITY_NAMES[skin.rarity] + '</b><span>' +
+        WEAR_NAMES[skin.wear] + ' ' + skin.float.toFixed(3) + '</span></div>' +
+        '<div class="meta"><span>' + skin.weaponId + '</span><span>' + skin.patternId + '</span></div>' +
+        '</div>'
+      );
+    }
+
+    grid.innerHTML = html.join('');
+    var t1 = performance.now();
+    stat.textContent = 'отрисовано ' + shown + ' предметов за ' + Math.round(t1 - t0) + ' мс · ' +
+      'разметки ' + Math.round(grid.innerHTML.length / 1024) + ' КБ';
+  }
+
+  document.getElementById('reroll').onclick = function () { base++; render(); };
+  document.getElementById('toggleBig').onclick = function () {
+    document.body.classList.toggle('big');
+    render();
+  };
+  document.getElementById('toggleWear').onclick = function () { wearMode = !wearMode; render(); };
+  document.getElementById('filter').onchange = render;
+  document.getElementById('pattern').onchange = render;
+
+  render();
+  window.PGGallery = { render: render };
+})();
+</script>
+</body>
+</html>
