@@ -591,7 +591,10 @@
     });
   }
 
+  /* Обведённые с рисунка модели пропускаем: у них пропорции исходника,
+     а он и есть эталон, к которому мы приводим остальные. */
   WEAPONS.forEach(function (w) {
+    if (w.traced) return;
     w.parts.forEach(function (p) { p.d = reshape(p.d); });
     (w.lines || []).forEach(function (l) {
       l[0] = [fx(l[0][0]), fy(l[0][1])];
@@ -600,7 +603,22 @@
   });
 
   var index = {};
-  WEAPONS.forEach(function (w) { measure(w); index[w.id] = w; });
+
+  /*
+   * Пересборка справочника. Нужна, когда обведённые модели заменяют
+   * нарисованные уже после загрузки этого файла: габариты и кеш путей
+   * у заменённой модели свои.
+   */
+  function rebuild() {
+    index = {};
+    WEAPONS.forEach(function (w) {
+      delete w.paths;
+      measure(w);
+      index[w.id] = w;
+    });
+  }
+
+  rebuild();
 
   function byId(id) { return index[id] || WEAPONS[0]; }
 
@@ -614,6 +632,7 @@
     byId: byId,
     byClass: byClass,
     classPrice: CLASS_PRICE,
+    rebuild: rebuild,
     classes: ['rifle', 'smg', 'sniper', 'pistol', 'shotgun', 'relic']
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

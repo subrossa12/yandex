@@ -325,7 +325,7 @@
    *   2. царапины — короткие штрихи, чем выше float, тем их больше;
    *   3. выцветание — общая серая вуаль поверх покрытия.
    * ------------------------------------------------------------------ */
-  function wearLayer(uid, skinPaths, float, rnd, detail) {
+  function wearLayer(uid, skinPaths, float, rnd, detail, traced) {
     if (float < 0.03) return '';
 
     var clip = uid + 'w';
@@ -337,11 +337,13 @@
      * сдержанной: при высокой непрозрачности предмет превращается в
      * мультяшный контур и весь силуэт теряется.
      */
-    var edge = Math.min(0.26, float * 0.34);
-    body += '<g opacity="' + n(edge) + '">' +
-      skinPaths.map(function (p) {
-        return p.replace('/>', ' fill="none" stroke="#b0aa9e" stroke-width="' + n(0.8 + float * 2.2) + '"/>');
-      }).join('') + '</g>';
+    if (!traced) {
+      var edge = Math.min(0.26, float * 0.34);
+      body += '<g opacity="' + n(edge) + '">' +
+        skinPaths.map(function (p) {
+          return p.replace('/>', ' fill="none" stroke="#b0aa9e" stroke-width="' + n(0.8 + float * 2.2) + '"/>');
+        }).join('') + '</g>';
+    }
 
     /* 2. царапины */
     var count = Math.round(float * 46);
@@ -412,7 +414,15 @@
      * как набор плашек, а не как вещь. Двойная тёмная линия на стыке
      * деталей заодно работает как расшивка панелей.
      */
-    var outline = ' stroke="' + metal.outline + '" stroke-width="2" stroke-linejoin="round"';
+    /*
+     * Обведённые с рисунка модели ведут себя иначе, чем нарисованные
+     * координатами. У них контур и тени УЖЕ есть — это отдельные тёмные
+     * области (role: ink). Если добавить им ещё и свою обводку с бевелом
+     * на каждую из полусотни деталей, предмет превращается в кашу из
+     * кантов. Поэтому у обведённых моделей объём один на весь силуэт.
+     */
+    var traced = !!weapon.traced;
+    var outline = traced ? '' : ' stroke="' + metal.outline + '" stroke-width="2" stroke-linejoin="round"';
     var thin = ' stroke="' + metal.outline + '" stroke-width="0.9" stroke-linejoin="round"';
 
     /*
@@ -428,6 +438,31 @@
     pathsOf(weapon).forEach(function (part) {
       var p = '<path d="' + part.d + '"';
       if (part.role !== 'cut') allPaths.push(p + '/>');
+
+      /*
+       * Обведённая модель устроена иначе, чем нарисованная: сначала
+       * идёт силуэт целиком — его и красит паттерн, — а поверх ложится
+       * светотень с исходного рисунка. Отдельными цветами детали не
+       * заливаются: скин обязан перекрашивать вещь целиком, а от
+       * рисунка нужна не палитра, а расшивка, тени и блики.
+       */
+      if (part.role === 'silhouette') {
+        bodyParts.push(p + ' fill="' + pat.fill + '"/>');
+        skinPaths.push(p + '/>');
+        return;
+      }
+      if (part.role === 'ink') {
+        bodyParts.push(p + ' fill="#05070a" opacity="0.82"/>');
+        return;
+      }
+      if (part.role === 'shade') {
+        bodyParts.push(p + ' fill="#05070a" opacity="0.36"/>');
+        return;
+      }
+      if (part.role === 'light') {
+        bodyParts.push(p + ' fill="#ffffff" opacity="0.26"/>');
+        return;
+      }
 
       if (part.role === 'cut') {
         /* вырез: перфорация, окно, отверстие под палец. Тень внутрь даёт
@@ -450,7 +485,7 @@
       } else {
         bodyParts.push(p + ' fill="' + metal.light + '"' + outline + '/>');
       }
-      bodyParts.push(p + bevel + '/>');
+      if (!traced) bodyParts.push(p + bevel + '/>');
     });
 
     /* панельные линии: без них крупная плоскость читается как плашка */
@@ -467,7 +502,7 @@
         '<rect x="153" y="21" width="20" height="6" fill="' + c[3] + '" opacity="0.75"/></g>';
     }
 
-    var wear = wearLayer(uid, skinPaths, skin.float, rnd, detail);
+    var wear = wearLayer(uid, skinPaths, skin.float, rnd, detail, traced);
 
     /*
      * Объём. Свет сверху, тень снизу — одна и та же схема для каждой
