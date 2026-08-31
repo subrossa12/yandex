@@ -1,0 +1,139 @@
+{
+  "//": "Локальные дефолты. Зашиты в билд и работают всегда, даже без сети.",
+  "//flags": "Плоские ключи здесь — это и есть имена флагов в Консоли.",
+
+  "start": {
+    "currency": 0
+  },
+
+  "boot": {
+    "platformTimeout": 4,
+    "saveTimeout": 4
+  },
+
+  "ballistics": {
+    "//": "Пуля — настоящий снаряд. Скорость определяет упреждение,",
+    "//2": "сопротивление — насколько сильно она теряет её на дистанции.",
+    "gravity": 9.81,
+    "drag": 0.00019,
+    "bulletRadius": 0.05,
+    "maxFlightSeconds": 8
+  },
+
+  "wind": {
+    "//": "Постоянен внутри миссии: иначе пристрелка невозможна.",
+    "maxStrength": 11,
+    "gust": 0.12
+  },
+
+  "breath": {
+    "//": "Задержка тратится быстро, восстанавливается вдвое медленнее —",
+    "//2": "иначе её держали бы всю миссию и механики бы не было.",
+    "drainPerSecond": 0.34,
+    "regenPerSecond": 0.16,
+    "holdFactor": 0.12
+  },
+
+  "scope": {
+    "baseFov": 58
+  },
+
+  "rifles": {
+    "order": "vega,korshun,sokol,berkut",
+    "vega": {
+      "muzzleSpeed": 760, "steadiness": 1.0, "cycleSeconds": 1.7,
+      "capacity": 5, "price": 0, "stars": 0
+    },
+    "korshun": {
+      "muzzleSpeed": 845, "steadiness": 1.25, "cycleSeconds": 1.5,
+      "capacity": 5, "price": 1800, "stars": 6
+    },
+    "sokol": {
+      "muzzleSpeed": 910, "steadiness": 1.45, "cycleSeconds": 1.35,
+      "capacity": 7, "price": 4200, "stars": 14
+    },
+    "berkut": {
+      "muzzleSpeed": 985, "steadiness": 1.7, "cycleSeconds": 1.2,
+      "capacity": 7, "price": 9000, "stars": 24
+    }
+  },
+
+  "modules": {
+    "order": "rangefinder,bipod,suppressor,scope8",
+    "rangefinder": { "price": 900, "stars": 3 },
+    "bipod": { "price": 1200, "stars": 5, "steadiness": 1.7 },
+    "suppressor": { "price": 2100, "stars": 9, "alertScale": 2.2 },
+    "scope8": { "price": 3200, "stars": 12 }
+  },
+
+  "mission": {
+    "//": "Окно после тревоги: сколько у игрока есть до ухода цели.",
+    "alertSeconds": 9,
+    "starBonus": 60
+  },
+
+  "killcam": {
+    "//": "Показывается не на каждом выстреле, а только на тех, что",
+    "//2": "заслуживают показа: далеко, через окружение или последним патроном.",
+    "minRange": 220,
+    "timeScale": 0.22,
+    "durationSeconds": 2.2,
+    "holdSeconds": 0.5,
+    "leadIn": 0.35,
+    "fov": 42
+  },
+
+  "input": {
+    "mouseSensitivity": 0.13,
+    "touchSensitivity": 0.09
+  },
+
+  "ads": {
+    "//": "Все офферы — бонус сверху. Ни один не является условием",
+    "//2": "прохождения миссии (п. 4.5.2).",
+    "secondChanceAmmo": 1,
+    "intelSeconds": 0,
+    "cooldownSeconds": 0
+  },
+
+  "banner": {
+    "//": "Включается в Консоли. Управление из кода заложено, но выключено.",
+    "manageFromCode": false,
+    "hideInGameplay": false
+  },
+
+  "save": {
+    "debounceSeconds": 6
+  },
+
+  "leaderboard": {
+    "total": "total",
+    "range": "range"
+  },
+
+  "metrica": {
+    "//": "Пока номер пуст, счётчик не грузится и внешних запросов нет.",
+    "counterId": ""
+  },
+
+  "shortcut": {
+    "fromSession": 3,
+    "delaySeconds": 60
+  },
+
+  "missions": {
+    "//": "Награды и пороги звёзд по каждому контракту крутятся отсюда.",
+    "m01": { "reward": 300, "starsRequired": 0, "timeLimit": 45 },
+    "m02": { "reward": 340, "starsRequired": 1, "timeLimit": 45 },
+    "m03": { "reward": 380, "starsRequired": 3, "timeLimit": 40 },
+    "m04": { "reward": 420, "starsRequired": 5, "timeLimit": 40 },
+    "m05": { "reward": 480, "starsRequired": 7, "timeLimit": 38 },
+    "m06": { "reward": 540, "starsRequired": 9, "timeLimit": 38 },
+    "m07": { "reward": 600, "starsRequired": 12, "timeLimit": 35 },
+    "m08": { "reward": 680, "starsRequired": 15, "timeLimit": 35 },
+    "m09": { "reward": 760, "starsRequired": 18, "timeLimit": 32 },
+    "m10": { "reward": 860, "starsRequired": 21, "timeLimit": 32 },
+    "m11": { "reward": 980, "starsRequired": 24, "timeLimit": 30 },
+    "m12": { "reward": 1200, "starsRequired": 27, "timeLimit": 30 }
+  }
+}
