@@ -926,7 +926,15 @@ button {
 .loader[hidden] { display: none; }
 
 .loader__icon { font-size: 64px; animation: bob 1.4s ease-in-out infinite; }
-.loader__title { font-size: 22px; font-weight: 900; color: var(--accent-2); }
+.loader__title {
+  max-width: 280px;
+  font-size: 21px;
+  font-weight: 900;
+  line-height: 1.16;
+  text-align: center;
+  text-wrap: balance;
+  color: var(--accent-2);
+}
 .loader__text { font-size: 13px; color: var(--text-dim); }
 
 @keyframes bob {

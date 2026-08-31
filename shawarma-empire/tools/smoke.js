@@ -440,7 +440,7 @@ async function run() {
   const ruTab = (await page.locator('.tabbtn[data-tab="biz"] .tabbtn__label').textContent()).trim();
   const ruTitle = await page.title();
   if (ruTab !== 'Точки') fail('интерфейс не на русском по умолчанию: ' + ruTab);
-  else if (ruTitle !== 'Шаурма Империя') fail('заголовок не на русском: ' + ruTitle);
+  else if (ruTitle !== 'Шаурма Империя: симулятор бизнеса') fail('заголовок не на русском: ' + ruTitle);
   else ok('интерфейс на русском по умолчанию при английской локали браузера');
 
   /* тап по первой точке: цикл длится секунду, поэтому и ждём столько же */

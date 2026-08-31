@@ -144,7 +144,7 @@
       'tut.manager': 'Возьми менеджера — точка будет работать сама',
 
       /* прочее */
-      'title': 'Шаурма Империя',
+      'title': 'Шаурма Империя: симулятор бизнеса',
       'loading': 'Разогреваем гриль…',
       'newBiz': 'Открыта новая точка: {name}!',
       'review.ask': 'Нравится игра? Поставь оценку — это помогает.',
@@ -270,7 +270,7 @@
       'tut.tap': 'Tap the stall 👆',
       'tut.manager': 'Hire a manager so the spot runs itself',
 
-      'title': 'Shawarma Empire',
+      'title': 'Shawarma Empire: Business Simulator',
       'loading': 'Heating up the grill…',
       'newBiz': 'New spot unlocked: {name}!',
       'review.ask': 'Enjoying the game? A rating really helps.',
@@ -396,7 +396,7 @@
       'tut.tap': 'Büfeye dokun 👆',
       'tut.manager': 'Müdür tut, nokta kendi kendine çalışsın',
 
-      'title': 'Dürüm İmparatorluğu',
+      'title': 'Dürüm İmparatorluğu: iş simülatörü',
       'loading': 'Izgara ısınıyor…',
       'newBiz': 'Yeni nokta açıldı: {name}!',
       'review.ask': 'Oyunu beğendin mi? Puan vermen gerçekten yardımcı olur.',

@@ -14,7 +14,7 @@
 ### Название · 14/50
 
 ```
-Шаурма Империя
+Шаурма Империя: симулятор бизнеса
 ```
 
 ### Описание для SEO · 151/160
@@ -64,7 +64,7 @@
 ### Title · 15/50
 
 ```
-Shawarma Empire
+Shawarma Empire: Business Simulator
 ```
 
 ### SEO description · 149/160
