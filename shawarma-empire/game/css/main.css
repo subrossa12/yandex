@@ -1,0 +1,981 @@
+/*
+ * main.css — вся графика игры: ни одного растрового файла.
+ * Требования модерации, закрытые здесь:
+ *  - нет браузерного скролла и swipe-to-refresh (overscroll-behavior, fixed body)
+ *  - лонгтап не выделяет текст и не открывает меню (user-select, touch-callout)
+ *  - на десктопе длинная сторона поля не более чем вдвое длиннее короткой
+ *  - ничего не наезжает и не обрезается при любом размере окна
+ *  - под sticky-баннер сверху и снизу оставлен воздух
+ */
+
+:root {
+  --bg: #17110d;
+  --bg-2: #221812;
+  --panel: #2b1f17;
+  --panel-2: #34251b;
+  --line: rgba(255, 200, 150, 0.12);
+  --text: #f6ead9;
+  --text-dim: #b39c86;
+  --accent: #ff9f45;
+  --accent-2: #ffc978;
+  --green: #6fcf7f;
+  --green-dark: #2f7d43;
+  --red: #e2614b;
+  --gold: #ffd75e;
+  --shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  --radius: 14px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --tapfx: rgba(255, 159, 69, 0.25);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * Атрибут hidden должен побеждать классы: у .chip и .btn выставлен
+ * display: inline-flex, который иначе перебивает правило браузера,
+ * и скрытые элементы остаются на экране.
+ */
+[hidden] { display: none !important; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
+/*
+ * Пары «обычное значение + var()» ниже — не дублирование, а фолбэк:
+ * в заявленной поддержке есть iOS 9.0, а CSS-переменные появились
+ * только в 9.3. Без первой строки там осталось бы чёрное на чёрном.
+ */
+body {
+  position: fixed;
+  inset: 0;
+  background-color: #17110d;
+  background: radial-gradient(120% 90% at 50% 0%, #2a1d15 0%, var(--bg) 70%);
+  color: #f6ead9;
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.35;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+/* ------------------------------------------------------------------ *
+ * Каркас
+ * ------------------------------------------------------------------ */
+.game {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  max-width: 100vw;
+  background-color: #17110d;
+  background: linear-gradient(180deg, var(--bg-2) 0%, var(--bg) 100%);
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+  overflow: hidden;
+}
+
+/*
+ * Десктоп (п. 1.6.2.1 и 1.6.2.2): поле обязано дотягиваться до края
+ * доступной области хотя бы по одной оси, и при этом длинная сторона
+ * не может превышать короткую больше чем вдвое.
+ *
+ * Ширина = половина высоты (с запасом 52vh, чтобы отношение вышло 1.92,
+ * а не ровно 2 — округление пикселей не должно выталкивать за предел).
+ * Высота ограничена 192vw: на узком и высоком окне поле упирается
+ * в края по горизонтали, и отношение снова остаётся в пределах.
+ */
+@media (pointer: fine) {
+  .game {
+    width: min(100vw, max(420px, 52vh));
+    height: min(100vh, 192vw);
+    border-left: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+    box-shadow: 0 0 60px rgba(0, 0, 0, 0.55);
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Шапка
+ * ------------------------------------------------------------------ */
+.hud {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px 10px;
+  background: linear-gradient(180deg, rgba(255, 159, 69, 0.10), rgba(255, 159, 69, 0));
+  border-bottom: 1px solid var(--line);
+  /* воздух под возможный sticky-баннер сверху */
+  margin-top: 2px;
+}
+
+.hud__money { min-width: 0; }
+
+.hud__value {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: #ffc978;
+  color: var(--accent-2);
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hud__rate {
+  font-size: 13px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hud__side {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: rgba(255, 215, 94, 0.14);
+  border: 1px solid rgba(255, 215, 94, 0.3);
+  color: var(--gold);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.iconbtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iconbtn:active { transform: scale(0.94); }
+
+.boostbar {
+  flex: 0 0 auto;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold);
+  background: rgba(255, 215, 94, 0.10);
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ------------------------------------------------------------------ *
+ * Экраны
+ * ------------------------------------------------------------------ */
+.screens {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 8px 10px;
+}
+
+.screen[hidden] { display: none; }
+
+/* ------------------------------------------------------------------ *
+ * Карточка точки
+ * ------------------------------------------------------------------ */
+/*
+ * Список точек тянется на всю высоту экрана: карточки делят её между
+ * собой, поэтому в начале игры (открыты две точки) они крупные, а когда
+ * открыты все девять — компактные, но всё ещё помещаются целиком.
+ */
+.screen--biz {
+  display: flex;
+  flex-direction: column;
+}
+
+.bizlist {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  /*
+   * safe center: пока точек мало, карточки вместе с анонсом стоят по
+   * центру экрана; когда открыты все девять и место кончилось, safe
+   * не даёт срезать верхнюю карточку. Браузеры без поддержки ключевого
+   * слова игнорируют правило целиком и выравнивают по началу — тоже
+   * безопасно.
+   */
+  justify-content: safe center;
+}
+
+/*
+ * Пока открыто мало точек, под списком остаётся пустое место — вместо
+ * дыры показываем, что откроется дальше. Как только точек становится
+ * много, анонс прячется и место отдаётся карточкам.
+ */
+/* Забирает всё свободное место под карточками, чтобы экран не выглядел
+   наполовину пустым, пока открыто мало точек. */
+.nextup {
+  flex: 0 0 auto;
+  min-height: 56px;
+  max-height: 240px;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px dashed rgba(255, 200, 150, 0.2);
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.nextup__title {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  opacity: 0.7;
+  margin-bottom: 4px;
+}
+
+.nextup__list { color: var(--text); }
+
+.card {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 14px;
+  border-radius: var(--radius);
+  background-color: #2b1f17;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  flex: 1 1 0;
+  min-height: 66px;
+  /* верхняя граница нужна, чтобы две карточки в начале игры не
+     растянулись во весь экран; при девяти она всё равно не достигается */
+  max-height: 120px;
+}
+
+.card.is-new {
+  border-color: rgba(255, 159, 69, 0.5);
+  box-shadow: 0 0 0 1px rgba(255, 159, 69, 0.2), var(--shadow);
+}
+
+.card__tap {
+  position: relative;
+  flex: 0 0 auto;
+  align-self: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(255, 200, 120, 0.22), rgba(0, 0, 0, 0) 65%),
+    linear-gradient(180deg, #3d2b20, #2a1d15);
+  border: 2px solid rgba(255, 159, 69, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.08s ease;
+}
+
+.card__tap:active { transform: scale(0.92); }
+.card__tap:disabled { cursor: default; }
+
+.card.is-idle .card__tap {
+  animation: breathe 1.6s ease-in-out infinite;
+  border-color: var(--accent);
+}
+
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 159, 69, 0.45); }
+  50% { box-shadow: 0 0 0 8px rgba(255, 159, 69, 0); }
+}
+
+.card__icon {
+  font-size: 25px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.4));
+}
+
+.card__badge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  border-radius: 10px;
+  /* тёмная подложка: жёлтая молния на оранжевом не читалась */
+  background: #23160e;
+  border: 1px solid rgba(255, 159, 69, 0.55);
+  color: var(--accent-2);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+}
+
+.card__badge:empty { display: none; }
+
+.card__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+}
+
+.card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.card__name {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card__level {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.card__barrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.card__bar {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 20px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.card__fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  transform: scaleX(0);
+  background: linear-gradient(90deg, var(--green-dark), var(--green));
+  will-change: transform;
+}
+
+/*
+ * Полоса бывает узкой (маленький экран, длинное название), поэтому текст
+ * укорачивается многоточием, а не режется посередине символа.
+ * Многоточие работает только на блочном элементе, флексом его не сделать,
+ * — отсюда центрирование через transform, а не align-items.
+ */
+.card__bartext {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: block;
+  text-align: center;
+  line-height: 1.1;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  padding: 0 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card__name { font-size: 14px; }
+
+/* ------------------------------------------------------------------ *
+ * Кнопки
+ * ------------------------------------------------------------------ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: 11px;
+  background-color: #ff9f45;
+  background: linear-gradient(180deg, var(--accent), #e07a26);
+  color: #2b1508;
+  font-size: 14px;
+  font-weight: 800;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.28);
+  transition: transform 0.06s ease, filter 0.12s ease;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.28); }
+
+.btn.is-off {
+  filter: grayscale(0.65) brightness(0.62);
+  box-shadow: none;
+}
+
+/* Кнопки в карточке — вертикальные, во всю её высоту: крупная цель
+   для пальца при небольшой высоте самой карточки. */
+.card > .btn--buy {
+  flex: 0 0 auto;
+  width: 100px;
+  flex-direction: column;
+  gap: 0;
+  line-height: 1.15;
+  padding: 4px 6px;
+  min-height: 0;
+}
+
+.btn__title { font-size: 13px; }
+.btn__cost { font-size: 12px; font-weight: 700; opacity: 0.85; }
+
+.card > .btn--mgr {
+  flex: 0 0 auto;
+  width: 56px;
+  flex-direction: column;
+  gap: 0;
+  line-height: 1.15;
+  padding: 4px 4px;
+  min-height: 0;
+  background: linear-gradient(180deg, #7a6bd8, #5b4cb8);
+  color: #fff;
+}
+
+.card > .btn--mgr .btn__title { font-size: 17px; }
+.card > .btn--mgr .btn__cost { font-size: 10px; }
+
+/* Узкие экраны: ужимаем всё, чтобы название не схлопывалось */
+@media (max-width: 360px) {
+  .card { gap: 6px; padding: 6px; }
+  .card__tap { width: 44px; height: 44px; }
+  .card__icon { font-size: 22px; }
+  .card > .btn--buy { width: 88px; }
+  .card > .btn--mgr { width: 48px; }
+  .card__name { font-size: 13px; }
+}
+
+.btn--primary { background: linear-gradient(180deg, var(--accent), #e07a26); }
+
+.btn--ghost {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  box-shadow: none;
+  border: 1px solid var(--line);
+}
+
+.btn--danger { background: linear-gradient(180deg, #ef7358, #c8452f); color: #fff; }
+
+/* Кнопка рекламы всегда подписана «что это реклама» и «что дадут» */
+.btn--ad {
+  background: linear-gradient(180deg, #4fb0e8, #2b7fc0);
+  color: #fff;
+}
+
+.btn--ad .btn__ad { font-size: 15px; }
+
+.btn--wide {
+  display: flex;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.btn--small { min-height: 32px; padding: 4px 12px; font-size: 13px; }
+
+/* цена товара: число и иконка портальной валюты из SDK */
+.btn--price { gap: 4px; }
+.btn__currency { width: 16px; height: 16px; display: block; }
+
+/* ------------------------------------------------------------------ *
+ * Режим покупки
+ * ------------------------------------------------------------------ */
+.buymode {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-top: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.buymode[hidden] { display: none; }
+
+.buymode__label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-right: 2px;
+}
+
+.buymode__btn {
+  flex: 1 1 auto;
+  min-height: 32px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.buymode__btn.is-active {
+  background: rgba(255, 159, 69, 0.22);
+  border-color: var(--accent);
+  color: var(--accent-2);
+}
+
+/* ------------------------------------------------------------------ *
+ * Нижние вкладки
+ * ------------------------------------------------------------------ */
+.tabbar {
+  flex: 0 0 auto;
+  display: flex;
+  border-top: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.35);
+  /* воздух под sticky-баннер снизу */
+  padding-bottom: 2px;
+}
+
+.tabbtn {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--text-dim);
+  padding: 6px 2px;
+}
+
+.tabbtn[hidden] { display: none; }
+.tabbtn__icon { font-size: 19px; line-height: 1; }
+.tabbtn__label { font-size: 10px; font-weight: 700; letter-spacing: 0.1px; }
+
+.tabbtn.is-active {
+  color: var(--accent-2);
+  background: linear-gradient(180deg, rgba(255, 159, 69, 0.16), rgba(255, 159, 69, 0));
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+.tabbtn__dot {
+  position: absolute;
+  top: 8px;
+  right: 50%;
+  margin-right: -18px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.tabbtn.has-dot .tabbtn__dot { opacity: 1; }
+
+/* ------------------------------------------------------------------ *
+ * Списки (апгрейды, бонусы, магазин)
+ * ------------------------------------------------------------------ */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 14px;
+  border-radius: var(--radius);
+  background-color: #2b1f17;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--line);
+  min-height: 66px;
+}
+
+.row.is-dim { opacity: 0.45; }
+.row__icon { font-size: 24px; flex: 0 0 auto; width: 30px; text-align: center; }
+.row__mid { flex: 1 1 auto; min-width: 0; }
+.row__title { font-size: 14px; font-weight: 700; }
+.row__sub { font-size: 12px; color: var(--text-dim); }
+
+.row__tag {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--green);
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(111, 207, 127, 0.14);
+}
+
+.row--offer { border-color: rgba(79, 176, 232, 0.28); }
+
+.note {
+  font-size: 13px;
+  color: var(--text-dim);
+  padding: 6px 4px 2px;
+  line-height: 1.45;
+}
+
+/* ------------------------------------------------------------------ *
+ * Панели и прогресс престижа
+ * ------------------------------------------------------------------ */
+.panel {
+  padding: 12px;
+  border-radius: 14px;
+  border-radius: var(--radius);
+  background-color: #2b1f17;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--line);
+}
+
+.panel__title { font-size: 17px; font-weight: 800; margin-bottom: 6px; }
+.panel__text { font-size: 13px; color: var(--text-dim); line-height: 1.45; }
+
+.statrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 2px;
+  font-size: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.statrow:last-child { border-bottom: 0; }
+
+/* строка игрока в таблице лидеров */
+.statrow--me {
+  background: rgba(255, 159, 69, 0.12);
+  border-radius: 8px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.statrow--me .statrow__label { color: var(--accent-2); font-weight: 700; }
+.statrow__label { color: var(--text-dim); }
+.statrow__value { font-weight: 800; color: var(--accent-2); }
+
+.progress {
+  position: relative;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+
+.progress__fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  background: linear-gradient(90deg, #8a6b17, var(--gold));
+  transition: transform 0.3s ease;
+}
+
+.progress__text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  padding: 0 8px;
+  text-align: center;
+}
+
+.segmented { display: flex; gap: 4px; }
+
+.segmented__btn {
+  min-width: 46px;
+  min-height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.segmented__btn.is-active {
+  background: rgba(255, 159, 69, 0.22);
+  border-color: var(--accent);
+  color: var(--accent-2);
+}
+
+/* ------------------------------------------------------------------ *
+ * Модалки
+ * ------------------------------------------------------------------ */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(8, 5, 3, 0.72);
+  backdrop-filter: blur(2px);
+}
+
+.modal[hidden] { display: none; }
+
+.modal__box {
+  width: 100%;
+  max-width: 380px;
+  max-height: 86vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #35251b, #241a13);
+  border: 1px solid rgba(255, 200, 150, 0.2);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  animation: pop 0.18s ease-out;
+}
+
+@keyframes pop {
+  from { transform: scale(0.94); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.modal__title { font-size: 20px; font-weight: 800; margin-bottom: 10px; }
+.modal__sub { font-size: 15px; font-weight: 800; margin: 14px 0 4px; }
+.modal__text { font-size: 14px; color: var(--text-dim); line-height: 1.5; margin-bottom: 8px; }
+
+.modal__big {
+  font-size: 30px;
+  font-weight: 900;
+  color: var(--gold);
+  text-align: center;
+  margin: 10px 0 14px;
+}
+
+.modal__buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.modal__buttons .btn { width: 100%; }
+
+/* ------------------------------------------------------------------ *
+ * Эффекты
+ * ------------------------------------------------------------------ */
+.fx {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.float {
+  position: absolute;
+  transform: translate(-50%, 0);
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--green);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+  animation: floatup 0.9s ease-out forwards;
+  white-space: nowrap;
+}
+
+.float--coin { color: var(--gold); }
+
+@keyframes floatup {
+  0% { opacity: 0; transform: translate(-50%, 0) scale(0.9); }
+  15% { opacity: 1; transform: translate(-50%, -6px) scale(1.05); }
+  100% { opacity: 0; transform: translate(-50%, -46px) scale(1); }
+}
+
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: 96px;
+  transform: translateX(-50%);
+  max-width: 88%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(20, 13, 9, 0.95);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: var(--shadow);
+  animation: toastin 0.25s ease-out;
+}
+
+.toast.is-out { opacity: 0; transition: opacity 0.3s ease; }
+
+@keyframes toastin {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.pulse { animation: pulse 0.28s ease-out; }
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.07); }
+  100% { transform: scale(1); }
+}
+
+/* ------------------------------------------------------------------ *
+ * Заставка
+ * ------------------------------------------------------------------ */
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: radial-gradient(120% 90% at 50% 30%, #33241a 0%, var(--bg) 70%);
+  transition: opacity 0.35s ease;
+}
+
+.loader.is-hidden { opacity: 0; pointer-events: none; }
+.loader[hidden] { display: none; }
+
+.loader__icon { font-size: 64px; animation: bob 1.4s ease-in-out infinite; }
+.loader__title { font-size: 22px; font-weight: 900; color: var(--accent-2); }
+.loader__text { font-size: 13px; color: var(--text-dim); }
+
+@keyframes bob {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-8px) rotate(4deg); }
+}
+
+/* Пользователь просил меньше движения — уважаем */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/*
+ * Плотность под высоту экрана. Задача одна: девять точек должны помещаться
+ * на главный экран целиком, без прокрутки (п. 1.10.4). Чем ниже экран,
+ * тем компактнее карточки и служебные полосы.
+ */
+@media (max-height: 820px) {
+  .bizlist { gap: 4px; }
+  .card { min-height: 56px; max-height: 92px; padding: 6px; }
+  .card__tap { width: 44px; height: 44px; }
+  .card__icon { font-size: 22px; }
+  .hud { padding: 8px 12px 6px; }
+  .hud__value { font-size: 22px; }
+  .tabbtn { min-height: 46px; }
+  .buymode { padding: 4px 10px; }
+  .buymode__btn { min-height: 30px; }
+}
+
+@media (max-height: 680px) {
+  .bizlist { gap: 3px; }
+  .card { min-height: 44px; max-height: 76px; padding: 4px; gap: 6px; }
+  .card__tap { width: 36px; height: 36px; }
+  .card__icon { font-size: 18px; }
+  .card__name { font-size: 12px; }
+  .card__level { font-size: 11px; }
+  .card__bar { height: 15px; }
+  .card__badge { min-width: 16px; height: 16px; line-height: 14px; font-size: 9px; }
+  .hud { padding: 6px 10px 4px; }
+  .hud__value { font-size: 19px; }
+  .hud__rate { font-size: 11px; }
+  .iconbtn { width: 34px; height: 34px; font-size: 16px; }
+  .tabbtn { min-height: 42px; }
+  .tabbtn__icon { font-size: 16px; }
+  .tabbtn__label { font-size: 9px; }
+  .buymode__btn { min-height: 28px; font-size: 12px; }
+  .screen { padding: 6px 8px; }
+}

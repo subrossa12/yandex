@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1b1410">
+<meta name="description" content="Шаурма Империя — идл-игра про сеть общепита от ларька до фудкорта.">
+<title>Шаурма Империя</title>
+<link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<!-- Заставка на время инициализации SDK и загрузки сейва -->
+<div id="loader" class="loader">
+  <div class="loader__icon">🌯</div>
+  <div class="loader__title">Шаурма Империя</div>
+  <div class="loader__text">Разогреваем гриль…</div>
+</div>
+
+<div id="game" class="game">
+
+  <header id="hud" class="hud">
+    <div class="hud__money">
+      <div id="money" class="hud__value">0 ₽</div>
+      <div id="rate" class="hud__rate">0 ₽ / сек</div>
+    </div>
+    <div class="hud__side">
+      <div id="starsChip" class="chip" hidden>
+        <span class="chip__icon">⭐</span><span id="starsValue">0</span>
+      </div>
+      <button id="btnSound" class="iconbtn" type="button" aria-label="Звук">🔊</button>
+      <button id="btnSettings" class="iconbtn" type="button" aria-label="Настройки">⚙️</button>
+    </div>
+  </header>
+
+  <div id="boostBar" class="boostbar" hidden></div>
+
+  <main id="screens" class="screens">
+    <section id="tab-biz" class="screen screen--biz">
+      <div id="bizList" class="bizlist">
+        <div id="nextUp" class="nextup" hidden></div>
+      </div>
+    </section>
+
+    <section id="tab-upgrades" class="screen" hidden>
+      <div id="upList" class="list"></div>
+    </section>
+
+    <section id="tab-boosts" class="screen" hidden>
+      <div id="adsList" class="list"></div>
+    </section>
+
+    <section id="tab-prestige" class="screen" hidden>
+      <div id="prestigeBox" class="list"></div>
+    </section>
+
+    <section id="tab-shop" class="screen" hidden>
+      <div id="shopList" class="list"></div>
+    </section>
+  </main>
+
+  <div id="buyMode" class="buymode"></div>
+
+  <nav id="tabbar" class="tabbar"></nav>
+</div>
+
+<div id="modal" class="modal" hidden>
+  <div id="modalBox" class="modal__box" role="dialog" aria-modal="true"></div>
+</div>
+
+<div id="fx" class="fx" aria-hidden="true"></div>
+
+<!-- SDK Яндекс Игр. Локально файла нет — обёртка platform.js уходит в
+     режим localStorage, игра работает при открытии index.html с диска. -->
+<script src="/sdk.js"></script>
+
+<script src="data/balance.js"></script>
+<script src="data/i18n.js"></script>
+<script src="data/shop.js"></script>
+<script src="core/format.js"></script>
+<script src="core/economy.js"></script>
+<!-- config.js строго после economy.js: он отдаёт ядру эффективный баланс -->
+<script src="config.js"></script>
+<script src="core/metrica.js"></script>
+<script src="platform/platform.js"></script>
+<script src="ui/sound.js"></script>
+<script src="ui/ui.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
