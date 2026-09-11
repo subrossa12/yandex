@@ -7,11 +7,26 @@
 черновика запрещено (п. 5.11). Название совпадает с названием внутри
 игры (п. 5.1.3), слов «игра» и «game» в нём нет (п. 6.5).
 
+> **Перед подачей — про таблицу лидеров.** В текстах ниже она обещана,
+> и это обещание нужно подкрепить: в Консоли должна быть заведена
+> таблица с техническим именем **`total`**, сортировка по убыванию,
+> тип — целое число. Параметры — в `moderation.md`, раздел «Таблица
+> лидеров». Игра берёт имя `total` из кода и другое не спрашивает.
+>
+> Именно на этом пришёл отказ по п. 8.2.2: в описании таблица была, а
+> в игре модератор её не нашёл. Со стороны игры причина исправлена —
+> таблица теперь живёт на отдельной вкладке 🏆 «Рейтинг», видна с
+> первой секунды и не прячется, пока пуста. Со стороны Консоли шаг
+> остаётся за вами.
+>
+> Не пишите в описании ничего, чего нет в игре, — это ровно тот пункт,
+> по которому отказывают без обсуждения.
+
 ---
 
 ## Русский
 
-### Название · 14/50
+### Название · 33/50
 
 ```
 Шаурма Империя: симулятор бизнеса
@@ -29,7 +44,7 @@
 Из одного ларька шаурмы — до сети общепита по всей стране
 ```
 
-### Об игре · 763/1000
+### Об игре · 920/1000
 
 ```
 Всё начинается с одного ларька и одной шаурмы. Вы крутите её сами: нажимаете, продаёте, считаете первую выручку. Потом нанимаете менеджера — и ларёк работает уже без вас.
@@ -39,29 +54,32 @@
 Когда рост упирается в потолок, сеть можно продать. Взамен вы получаете звёзды: они остаются навсегда и умножают весь будущий доход, поэтому каждый следующий заход быстрее предыдущего.
 
 Сеть работает и без вас: вернётесь через час — выручка уже накопилась. Играется одной рукой, без регистрации и без обязательной рекламы.
+
+На вкладке «Рейтинг» — таблица лидеров по суммарной выручке за всё время. Она не обнуляется при продаже сети, поэтому каждый заход только двигает вас выше.
 ```
 
-### Как играть · 941/1000
+### Как играть · 982/1000
 
 ```
 Управление — только касания экрана или клики мышью.
 
-1. Нажмите на точку: она приготовит заказ и принесёт деньги. Полоса под названием показывает, сколько осталось до конца цикла.
-2. Покупайте уровни кнопкой справа — чем выше уровень, тем больше выручка за цикл. Внизу переключается покупка сразу на ×10, ×100 или максимум.
-3. Наймите менеджера (фиолетовая кнопка) — точка начнёт работать сама, без нажатий.
-4. Открывайте новые точки: каждая следующая приносит кратно больше предыдущей.
-5. Загляните во вкладку «Апгрейды»: они умножают доход отдельной точки или всей сети.
-6. Значок ⚡ на иконке показывает уровень, на котором точка ускорится вдвое. Пороги: 25, 50, 100 и 200.
+1. Нажмите на точку: она приготовит заказ и принесёт деньги. Полоса под названием — сколько осталось до конца цикла.
+2. Покупайте уровни кнопкой справа: чем выше уровень, тем больше выручка за цикл. Внизу переключается покупка на ×10, ×100 или максимум.
+3. Наймите менеджера (фиолетовая кнопка) — точка заработает сама, без нажатий.
+4. Открывайте новые точки: каждая следующая приносит кратно больше.
+5. Вкладка «Апгрейды» умножает доход отдельной точки или всей сети.
+6. Значок ⚡ показывает уровень, где точка ускорится вдвое: 25, 50, 100 и 200.
 7. Когда рост замедлится, откройте «Престиж» и продайте сеть. Звёзды останутся навсегда и умножат доход в следующем заходе.
+8. Вкладка «Рейтинг» — таблица лидеров по суммарной выручке. Свой результат виден сразу, общий список — после входа в аккаунт.
 
-Во вкладке «Бонусы» за просмотр рекламы дают ускорение или мгновенную выручку. Это по желанию: игра полностью проходится без единого ролика.
+Во вкладке «Бонусы» за просмотр рекламы дают ускорение или мгновенную выручку. Это по желанию: игра проходится без единого ролика.
 ```
 
 ---
 
 ## English
 
-### Title · 15/50
+### Title · 35/50
 
 ```
 Shawarma Empire: Business Simulator
@@ -79,7 +97,7 @@ Idle clicker about food business: grill shawarma, hire managers, open cafes and 
 One shawarma stall grows into a nationwide food court empire
 ```
 
-### About the game · 778/1000
+### About the game · 912/1000
 
 ```
 It all starts with one stall and one shawarma. You cook it yourself: tap, sell, count your first coins. Then you hire a manager, and the stall keeps working without you.
@@ -89,22 +107,25 @@ Next come a corner cafe, a bakery, a pizzeria, a sushi bar, a burger joint, a re
 When growth hits a wall, sell the whole chain. In return you get stars: they stay forever and multiply all future income, so every run is faster than the one before.
 
 Your chain works while you are away: come back an hour later and the money is waiting. One-handed play, no sign-up, no forced ads.
+
+The Ranking tab holds a leaderboard by total revenue of all time. Selling the chain never resets it, so every run only moves you up.
 ```
 
-### How to play · 973/1000
+### How to play · 995/1000
 
 ```
-Controls are taps on the screen or mouse clicks, nothing else.
+Controls are taps on the screen or mouse clicks.
 
-1. Tap a spot: it cooks an order and earns money. The bar under the name shows how much of the cycle is left.
-2. Buy levels with the button on the right — the higher the level, the bigger the payout per cycle. At the bottom you can switch to buying x10, x100 or the maximum at once.
-3. Hire a manager (the purple button) and the spot runs itself, no tapping needed.
-4. Unlock new spots: each one earns many times more than the previous.
-5. Check the Upgrades tab: they multiply the income of a single spot or of the whole chain.
-6. The lightning badge on the icon shows the level where the spot doubles its speed. Thresholds: 25, 50, 100 and 200.
+1. Tap a spot: it cooks an order and earns money. The bar under the name shows the time left in the cycle.
+2. Buy levels with the button on the right: the higher the level, the bigger the payout per cycle. At the bottom switch to x10, x100 or max.
+3. Hire a manager (the purple button) and the spot runs itself, no tapping.
+4. Unlock new spots: each earns many times more than the previous.
+5. The Upgrades tab multiplies the income of one spot or of the whole chain.
+6. The lightning badge shows the level where the spot doubles its speed: 25, 50, 100 and 200.
 7. When growth slows down, open Prestige and sell the chain. Stars stay forever and multiply your income in the next run.
+8. The Ranking tab is a leaderboard by total revenue. Your own result shows right away; the full list opens after you sign in.
 
-The Bonuses tab offers a speed boost or instant cash for watching an ad. It is optional: the game is fully playable without a single video.
+The Bonuses tab offers a speed boost or instant cash for watching an ad. It is optional: the game is playable without a single video.
 ```
 
 ---

@@ -423,6 +423,138 @@ async function metricaChecks(browser) {
   await page.close();
 }
 
+/*
+ * Таблица лидеров (п. 8.2.2).
+ *
+ * Модерация отклонила игру именно здесь: в карточке таблица обещана, а
+ * найти её в игре было нельзя. Причин было две — таблица лежала внизу
+ * вкладки «Престиж» и рисовалась только тогда, когда платформа вернула
+ * хотя бы одну строку. Оба состояния, при которых её не видел никто
+ * (пустая таблица и вовсе недоступная), проверяются здесь отдельно.
+ */
+async function leaderboardChecks(browser) {
+  /* --- 1. Локальный запуск: SDK нет вообще --- */
+  const { page, errors } = await makePage(browser, SIZES[0]);
+  await page.goto(GAME);
+  await page.waitForSelector('#loader[hidden]', { state: 'attached', timeout: 8000 });
+
+  const tabBtn = page.locator('.tabbtn[data-tab="lb"]');
+  if (!(await tabBtn.isVisible())) {
+    fail('вкладки с таблицей лидеров нет в нижней панели');
+  } else {
+    ok('вкладка «Рейтинг» видна с первой секунды');
+  }
+
+  await tabBtn.click();
+  await page.waitForTimeout(400);
+
+  const local = await page.evaluate(() => {
+    const box = document.getElementById('lbBox');
+    return { visible: !!box && box.children.length > 0, text: box ? box.textContent : '' };
+  });
+  if (!local.visible) fail('вкладка рейтинга пустая без SDK');
+  else if (!/Таблица лидеров|Лидеры/.test(local.text)) fail('на вкладке рейтинга нет заголовка таблицы');
+  else if (!/Ваш результат/.test(local.text)) fail('свой результат не показан без SDK');
+  else ok('без SDK рейтинг всё равно осмысленный: заголовок и свой результат');
+
+  if (errors.length) errors.slice(0, 3).forEach((e) => fail('консоль: ' + e));
+  await page.close();
+
+  /*
+   * --- 2. Таблица заведена в Консоли, но пустая ---
+   * Ровно то состояние, в котором игру видит модератор в день подачи.
+   */
+  const { page: empty, errors: emptyErr } = await makePage(browser, SIZES[0]);
+  await empty.addInitScript(lbSdk(), { entries: [] });
+  await empty.goto(GAME);
+  await empty.waitForSelector('#loader[hidden]', { state: 'attached', timeout: 8000 });
+  await empty.locator('.tabbtn[data-tab="lb"]').click();
+  await empty.waitForTimeout(600);
+
+  const emptyText = await empty.locator('#lbBox').textContent();
+  if (!/пока никого/.test(emptyText)) {
+    fail('пустая таблица лидеров не показывается — именно на этом отклонила модерация');
+  } else {
+    ok('пустая таблица видна и объясняет, как в неё попасть');
+  }
+  if (emptyErr.length) emptyErr.slice(0, 3).forEach((e) => fail('консоль: ' + e));
+  await empty.close();
+
+  /* --- 3. В таблице есть строки --- */
+  const { page: full, errors: fullErr } = await makePage(browser, SIZES[0]);
+  await full.addInitScript(lbSdk(), {
+    entries: [
+      { rank: 1, score: 8.4e12, player: { publicName: 'Шаурмастер' } },
+      { rank: 2, score: 3.1e12, player: { publicName: 'Донер' } },
+      { rank: 3, score: 9.7e11, player: { publicName: '' } }
+    ],
+    userRank: 2
+  });
+  await full.goto(GAME);
+  await full.waitForSelector('#loader[hidden]', { state: 'attached', timeout: 8000 });
+
+  /* Немного заработать: нулевой результат в таблицу и не должен уходить. */
+  const fullTap = full.locator('.card').first().locator('.card__tap');
+  for (let i = 0; i < 3; i++) { await fullTap.click(); await full.waitForTimeout(1050); }
+
+  await full.locator('.tabbtn[data-tab="lb"]').click();
+  await full.waitForTimeout(600);
+
+  const rows = await full.locator('#lbBox .statrow').count();
+  const meRow = await full.locator('#lbBox .statrow--me').count();
+  const text = await full.locator('#lbBox').textContent();
+  if (rows < 3) fail(`в таблице отрисовано строк: ${rows}, ожидалось минимум 3`);
+  else if (!meRow) fail('своя строка в таблице не подсвечена');
+  else if (!/Шаурмастер/.test(text)) fail('имена игроков не попали в таблицу');
+  else ok(`таблица рисует строки платформы: ${rows} шт., своя подсвечена`);
+
+  /* Результат обязан уходить на платформу при открытии вкладки, иначе в
+     таблице не окажется тех, кто ещё не продавал сеть. */
+  const sent = await full.evaluate(() => window.__lbScores || []);
+  if (!sent.length) fail('при открытии рейтинга результат не отправлен на платформу');
+  else if (sent[0].name !== 'total') fail('результат ушёл не в ту таблицу: ' + sent[0].name);
+  else ok('результат отправляется в таблицу «total» при открытии вкладки');
+
+  if (fullErr.length) fullErr.slice(0, 3).forEach((e) => fail('консоль: ' + e));
+  await full.close();
+}
+
+/*
+ * Заглушка SDK с работающими лидербордами: отдаёт заданные строки и
+ * записывает всё, что игра пытается отправить.
+ */
+function lbSdk() {
+  return function (cfg) {
+    window.__lbScores = [];
+    window.YaGames = {
+      init: () => Promise.resolve({
+        environment: { i18n: { lang: 'ru' } },
+        getFlags: () => Promise.resolve({}),
+        getPlayer: () => Promise.resolve({
+          isAuthorized: () => true,
+          getData: () => Promise.resolve({}),
+          setData: () => Promise.resolve(),
+          getStats: () => Promise.resolve({}),
+          setStats: () => Promise.resolve()
+        }),
+        getPayments: () => Promise.reject(new Error('no payments')),
+        leaderboards: {
+          getEntries: () => Promise.resolve({
+            entries: cfg.entries,
+            userRank: cfg.userRank || 0
+          }),
+          setScore: (name, score) => { window.__lbScores.push({ name, score }); }
+        },
+        features: { LoadingAPI: { ready() {} }, GameplayAPI: { start() {}, stop() {} } },
+        adv: { showRewardedVideo() {}, showFullscreenAdv() {} },
+        serverTime: () => Date.now(),
+        isAvailableMethod: () => Promise.resolve(true),
+        on() {}
+      })
+    };
+  };
+}
+
 async function run() {
   const browser = await chromium.launch({
     executablePath: '/opt/pw-browsers/chromium',
@@ -462,7 +594,7 @@ async function run() {
   else ok('покупка уровня работает: ' + lvl);
 
   /* вкладки */
-  for (const tabId of ['upgrades', 'boosts', 'prestige', 'biz']) {
+  for (const tabId of ['upgrades', 'boosts', 'prestige', 'lb', 'biz']) {
     await page.locator(`.tabbtn[data-tab="${tabId}"]`).click();
     await page.waitForTimeout(150);
     const visible = await page.locator(`#tab-${tabId}`).isVisible();
@@ -583,6 +715,9 @@ async function run() {
 
   console.log('\n== 7. Цели Метрики ==');
   await metricaChecks(browser);
+
+  console.log('\n== 8. Таблица лидеров (п. 8.2.2) ==');
+  await leaderboardChecks(browser);
 
   await browser.close();
 

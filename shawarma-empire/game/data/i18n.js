@@ -27,6 +27,7 @@
       'tab.upgrades': 'Апгрейды',
       'tab.boosts': 'Бонусы',
       'tab.prestige': 'Престиж',
+      'tab.lb': 'Рейтинг',
       'tab.shop': 'Магазин',
 
       /* шапка */
@@ -98,9 +99,15 @@
       'prestige.done': 'Сеть продана! Получено звёзд: {n}',
 
       /* лидерборд */
-      'lb.title': 'Лидеры по выручке',
+      'lb.title': 'Таблица лидеров по выручке',
       'lb.player': 'Игрок',
-      'lb.note': 'Учитывается суммарная выручка за все продажи сети.',
+      'lb.note': 'В таблицу идёт суммарная выручка за всё время. Она не обнуляется при продаже сети, поэтому каждый заход только добавляет к результату.',
+      'lb.empty': 'В таблице пока никого. Продайте сеть — и попадёте в неё первым.',
+      'lb.loading': 'Загружаем таблицу…',
+      'lb.offline': 'Таблица доступна в Яндекс Играх и после входа в аккаунт. Ваш результат считается в любом случае и попадёт в неё при первом входе.',
+      'lb.mine': 'Ваш результат',
+      'lb.mineTotal': 'Суммарная выручка',
+      'lb.mineSold': 'Сетей продано',
       'lb.authWhy': 'С аккаунтом Яндекса прогресс сохранится в облаке и будет доступен на любом устройстве, а ваш результат попадёт в таблицу.',
       'lb.authBtn': 'Войти с Яндекс ID',
 
@@ -167,6 +174,7 @@
       'tab.upgrades': 'Upgrades',
       'tab.boosts': 'Bonuses',
       'tab.prestige': 'Prestige',
+      'tab.lb': 'Ranking',
       'tab.shop': 'Shop',
 
       'hud.perSec': '{v} / sec',
@@ -229,9 +237,15 @@
       'prestige.adBonusActive': '+20% bonus is active',
       'prestige.done': 'Chain sold! Stars earned: {n}',
 
-      'lb.title': 'Top by revenue',
+      'lb.title': 'Leaderboard by revenue',
       'lb.player': 'Player',
-      'lb.note': 'Total revenue across all chain sales.',
+      'lb.note': 'The board ranks total revenue of all time. Selling the chain never resets it, so every run only adds to your result.',
+      'lb.empty': 'The board is still empty. Sell your chain and be the first in it.',
+      'lb.loading': 'Loading the board…',
+      'lb.offline': 'The board is available on Yandex Games once you sign in. Your result is counted either way and joins the board at your first sign-in.',
+      'lb.mine': 'Your result',
+      'lb.mineTotal': 'Total revenue',
+      'lb.mineSold': 'Chains sold',
       'lb.authWhy': 'With a Yandex account your progress is stored in the cloud and available on any device, and your result joins the board.',
       'lb.authBtn': 'Sign in with Yandex ID',
 
@@ -293,6 +307,7 @@
       'tab.upgrades': 'Yükseltmeler',
       'tab.boosts': 'Bonuslar',
       'tab.prestige': 'Prestij',
+      'tab.lb': 'Sıralama',
       'tab.shop': 'Mağaza',
 
       'hud.perSec': '{v} / sn',
@@ -355,9 +370,15 @@
       'prestige.adBonusActive': '+%20 bonus etkin',
       'prestige.done': 'Zincir satıldı! Kazanılan yıldız: {n}',
 
-      'lb.title': 'Gelire göre liderler',
+      'lb.title': 'Gelire göre liderler tablosu',
       'lb.player': 'Oyuncu',
-      'lb.note': 'Tüm zincir satışlarının toplam geliri sayılır.',
+      'lb.note': 'Tabloda tüm zamanların toplam geliri sıralanır. Zinciri satmak bu sayıyı sıfırlamaz, her tur sonucuna eklenir.',
+      'lb.empty': 'Tablo henüz boş. Zincirini sat ve ilk sıraya sen gir.',
+      'lb.loading': 'Tablo yükleniyor…',
+      'lb.offline': 'Tablo, Yandex Games üzerinde ve hesaba girdikten sonra açılır. Sonucun her hâlükârda sayılır ve ilk girişte tabloya eklenir.',
+      'lb.mine': 'Senin sonucun',
+      'lb.mineTotal': 'Toplam gelir',
+      'lb.mineSold': 'Satılan zincir',
       'lb.authWhy': 'Yandex hesabıyla ilerlemen bulutta saklanır, her cihazdan açılır ve sonucun tabloya girer.',
       'lb.authBtn': 'Yandex ID ile gir',
 

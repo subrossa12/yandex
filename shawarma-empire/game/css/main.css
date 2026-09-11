@@ -616,6 +616,8 @@ button {
 .tabbtn {
   position: relative;
   flex: 1 1 0;
+  /* вкладок шесть, и на узком экране подпись не должна распирать кнопку */
+  min-width: 0;
   min-height: 52px;
   display: flex;
   flex-direction: column;
@@ -628,7 +630,14 @@ button {
 
 .tabbtn[hidden] { display: none; }
 .tabbtn__icon { font-size: 19px; line-height: 1; }
-.tabbtn__label { font-size: 10px; font-weight: 700; letter-spacing: 0.1px; }
+.tabbtn__label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1px;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+}
 
 .tabbtn.is-active {
   color: var(--accent-2);

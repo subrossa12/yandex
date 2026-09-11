@@ -444,7 +444,15 @@
       save();
     },
 
-    onTab: function () { /* зарезервировано под аналитику */ },
+    /*
+     * Результат отправляем при открытии рейтинга. Раньше он уходил только
+     * при продаже сети — и тот, кто до престижа не дошёл, в таблице не
+     * появлялся вообще, хотя выручка у него уже была. Платформа сама
+     * ограничивает частоту записи, плюс свой предохранитель в submitScore.
+     */
+    onTab: function (id) {
+      if (id === 'lb') Platform.submitScore(LEADERBOARD, state.lifetimeEarned);
+    },
 
     adsAvailable: adsAvailable,
     loadLeaderboard: function () { return Platform.loadLeaderboard(LEADERBOARD, 10); },

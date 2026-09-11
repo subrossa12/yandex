@@ -51,6 +51,7 @@
       upList: $('upList'),
       adsList: $('adsList'),
       prestigeBox: $('prestigeBox'),
+      lbBox: $('lbBox'),
       shopList: $('shopList'),
       buyMode: $('buyMode'),
       tabbar: $('tabbar'),
@@ -103,6 +104,7 @@
     { id: 'upgrades', icon: '⚡', key: 'tab.upgrades' },
     { id: 'boosts', icon: '🎬', key: 'tab.boosts' },
     { id: 'prestige', icon: '⭐', key: 'tab.prestige' },
+    { id: 'lb', icon: '🏆', key: 'tab.lb' },
     { id: 'shop', icon: '🛒', key: 'tab.shop' }
   ];
 
@@ -668,8 +670,6 @@
       go.addEventListener('click', confirmPrestige);
       box.appendChild(go);
     }
-
-    renderLeaderboard(box);
   }
 
   /* Множитель от звёзд по той же формуле, что и в экономике. */
@@ -681,30 +681,81 @@
   }
 
   /* ---------------------------------------------------------------- *
-   * Лидерборд: рисуется только если он заведён в Консоли
+   * Вкладка «Рейтинг» — таблица лидеров по суммарной выручке
+   *
+   * ПОЧЕМУ ЭТО ОТДЕЛЬНАЯ ВКЛАДКА И ПОЧЕМУ ОНА РИСУЕТСЯ ВСЕГДА.
+   *
+   * Раньше таблица жила внизу вкладки «Престиж» и появлялась только
+   * тогда, когда платформа вернула хотя бы одну строку. Совпали два
+   * условия — и таблицы не видел никто: до первой продажи сети в ней
+   * пусто, а свежезаведённая в Консоли таблица пуста по определению.
+   * Модерация справедливо написала, что таблицы лидеров в игре нет
+   * (п. 8.2.2: тексты обязаны отражать реальную механику).
+   *
+   * Теперь иначе. Вкладка есть в нижней панели с первой секунды, а
+   * панель внутри рисуется при любом ответе платформы: свой результат
+   * игра знает сама и показывает его всегда, а список сверху появляется
+   * ровно настолько, насколько его отдаёт SDK. Пусто, гость, нет связи,
+   * таблица ещё не заведена — экран всё равно осмысленный, и обещание
+   * из карточки игры выполняется.
    * ---------------------------------------------------------------- */
-  var lbCache = { at: 0, rows: null, pending: false };
+  var lbCache = { at: 0, rows: null, pending: false, loaded: false };
+  var lbMineValue = null;      // ячейка со своим результатом — её обновляем точечно
 
-  function renderLeaderboard(box) {
+  function renderLb() {
+    var box = els.lbBox;
+    if (!box) return;
+    box.innerHTML = '';
+    lbMineValue = null;
+
+    var st = ctx.getState();
     var now = Date.now();
+
+    /* Подтягиваем список не чаще раза в минуту: чаще платформа и не даёт. */
     if (!lbCache.pending && (now - lbCache.at > 60000)) {
       lbCache.pending = true;
       ctx.actions.loadLeaderboard().then(function (rows) {
-        lbCache = { at: Date.now(), rows: rows, pending: false };
-        if (currentTab === 'prestige') renderPrestige();
+        lbCache = { at: Date.now(), rows: rows, pending: false, loaded: true };
+        if (currentTab === 'lb') renderLb();
       });
     }
-    if (!lbCache.rows || !lbCache.rows.length) return;
 
     var panel = el('div', 'panel');
-    panel.appendChild(el('h3', 'panel__title', '🏆 ' + t('lb.title')));
-    lbCache.rows.forEach(function (r) {
-      var row = el('div', 'statrow' + (r.isUser ? ' statrow--me' : ''));
-      row.appendChild(el('span', 'statrow__label', r.rank + '. ' + (r.name || t('lb.player'))));
-      row.appendChild(el('span', 'statrow__value', F.money(r.score)));
-      panel.appendChild(row);
-    });
-    panel.appendChild(el('p', 'note', t('lb.note')));
+    panel.appendChild(el('h2', 'panel__title', '🏆 ' + t('lb.title')));
+    panel.appendChild(el('p', 'panel__text', t('lb.note')));
+
+    var rows = lbCache.rows;
+
+    if (rows && rows.length) {
+      rows.forEach(function (r) {
+        var row = el('div', 'statrow' + (r.isUser ? ' statrow--me' : ''));
+        row.appendChild(el('span', 'statrow__label', r.rank + '. ' + (r.name || t('lb.player'))));
+        row.appendChild(el('span', 'statrow__value', F.cash(r.score)));
+        panel.appendChild(row);
+      });
+    } else if (!lbCache.loaded) {
+      panel.appendChild(el('p', 'note', t('lb.loading')));
+    } else if (rows) {
+      panel.appendChild(el('p', 'note', t('lb.empty')));
+    } else {
+      /* SDK не отдал список: офлайн-запуск, гостевой режим или таблица
+         ещё не заведена в Консоли. Свой результат это не отменяет. */
+      panel.appendChild(el('p', 'note', t('lb.offline')));
+    }
+    box.appendChild(panel);
+
+    /*
+     * Свой результат — отдельной панелью и всегда. Это та же величина,
+     * которая уходит в таблицу (суммарная выручка за всё время), поэтому
+     * игрок видит, с чем именно он сравнивается.
+     */
+    var mine = el('div', 'panel');
+    mine.appendChild(el('h3', 'panel__title', t('lb.mine')));
+    var mineRow = statRow(t('lb.mineTotal'), F.cash(st.lifetimeEarned || 0));
+    lbMineValue = mineRow.lastChild;
+    mine.appendChild(mineRow);
+    mine.appendChild(statRow(t('lb.mineSold'), String(st.prestiges || 0)));
+    box.appendChild(mine);
 
     /*
      * Предложение войти показываем только гостю и только как кнопку,
@@ -712,18 +763,19 @@
      * просто не нажимая: игра от этого никак не ограничена.
      */
     if (ctx.actions.isGuest()) {
-      panel.appendChild(el('p', 'note', t('lb.authWhy')));
-      var auth = el('button', 'btn btn--primary btn--wide', t('lb.authBtn'));
-      auth.type = 'button';
-      auth.addEventListener('click', function () {
+      var auth = el('div', 'panel');
+      auth.appendChild(el('p', 'note', t('lb.authWhy')));
+      var btn = el('button', 'btn btn--primary btn--wide', t('lb.authBtn'));
+      btn.type = 'button';
+      btn.addEventListener('click', function () {
         ctx.actions.requestAuth(function () {
-          lbCache = { at: 0, rows: null, pending: false };
-          renderPrestige();
+          lbCache = { at: 0, rows: null, pending: false, loaded: false };
+          renderLb();
         });
       });
-      panel.appendChild(auth);
+      auth.appendChild(btn);
+      box.appendChild(auth);
     }
-    box.appendChild(panel);
   }
 
   function statRow(label, value) {
@@ -976,6 +1028,7 @@
     if (currentTab === 'upgrades') renderUpgrades();
     else if (currentTab === 'boosts') renderAds();
     else if (currentTab === 'prestige') renderPrestige();
+    else if (currentTab === 'lb') renderLb();
     else if (currentTab === 'shop') renderShop();
     if (force) lastFullRefresh = 0;
   }
@@ -1000,6 +1053,14 @@
       if (currentTab === 'boosts') updateAdTimers();
       else if (currentTab === 'upgrades') renderUpgrades();
       else if (currentTab === 'prestige') renderPrestige();
+      /*
+       * Рейтинг целиком не пересобираем: на нём есть кнопка входа, а
+       * пересборка DOM под пальцем съедает нажатие. Обновляем только
+       * свой результат — единственное, что здесь меняется само.
+       */
+      else if (currentTab === 'lb' && lbMineValue) {
+        lbMineValue.textContent = F.cash(ctx.getState().lifetimeEarned || 0);
+      }
     }
   }
 
