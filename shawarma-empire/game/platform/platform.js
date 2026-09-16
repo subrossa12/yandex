@@ -37,8 +37,6 @@
   var saveTimer = null;
   var pendingData = null;
   var lastCloudWrite = 0;
-  var lastInterstitial = 0;
-  var startedAt = Date.now();
   var adInProgress = false;
 
   /* ---------------------------------------------------------------- *
@@ -490,46 +488,26 @@
   }
 
   /*
-   * Interstitial. Только в логических паузах и никогда по таймеру —
-   * случайные клики РСЯ считает фродом.
+   * ПОЧЕМУ ЗДЕСЬ НЕТ ПОЛНОЭКРАННОЙ РЕКЛАМЫ.
+   *
+   * Раньше игра показывала interstitial в двух местах: при продаже сети
+   * и при открытии новой точки. Оба выглядели логическими паузами —
+   * игрок сам нажал кнопку, экран меняется, момент вроде бы удачный.
+   *
+   * По п. 4.4 это всё равно нарушение. «Шаурма Империя» — игра реального
+   * времени: точки работают и начисляют выручку непрерывно, таймеры
+   * циклов не останавливаются. В таких играх реклама по игровому
+   * действию недопустима как класс, и то, насколько уместной кажется
+   * конкретная пауза, роли не играет.
+   *
+   * Поэтому вызова showFullscreenAdv в игре нет вообще — ни по действию,
+   * ни по таймеру, ни при запуске. Реклама осталась ровно одна: ролик,
+   * который игрок запускает сам кнопкой с пометкой 🎬 ради конкретного
+   * бонуса (п. 4.5.2). Плюс sticky-баннер, который ставит платформа.
+   *
+   * Отсутствие showFullscreenAdv в билде проверяется сборкой
+   * (`tools/build.sh`) и автотестом (`tools/smoke.js`, раздел 9).
    */
-  function canShowInterstitial(noAdsPurchased) {
-    if (noAdsPurchased) return false;
-    if (!ysdk || !ysdk.adv || typeof ysdk.adv.showFullscreenAdv !== 'function') return false;
-    if (adInProgress) return false;
-    var cfg = SE.BALANCE.interstitial;
-    if (Date.now() - startedAt < cfg.skipFirstSessionMs) return false;
-    if (Date.now() - lastInterstitial < cfg.minGapMs) return false;
-    return true;
-  }
-
-  function showInterstitial(opts) {
-    opts = opts || {};
-    if (!canShowInterstitial(opts.noAds)) {
-      if (opts.onDone) opts.onDone(false);
-      return;
-    }
-    lastInterstitial = Date.now();
-    flush();
-    pauseForAd();
-    try {
-      ysdk.adv.showFullscreenAdv({
-        callbacks: {
-          onClose: function (wasShown) {
-            resumeAfterAd();
-            if (opts.onDone) opts.onDone(!!wasShown);
-          },
-          onError: function () {
-            resumeAfterAd();
-            if (opts.onDone) opts.onDone(false);
-          }
-        }
-      });
-    } catch (e) {
-      resumeAfterAd();
-      if (opts.onDone) opts.onDone(false);
-    }
-  }
 
   /* ---------------------------------------------------------------- *
    * Покупки
@@ -818,8 +796,6 @@
     flush: flush,
     showRewarded: showRewarded,
     rewardedAvailable: rewardedAvailable,
-    showInterstitial: showInterstitial,
-    canShowInterstitial: canShowInterstitial,
     catalog: catalog,
     priceOf: priceOf,
     purchase: purchase,

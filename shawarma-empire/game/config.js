@@ -81,11 +81,9 @@
     { path: 'ads.prestige.bonus', key: 'ads.prestige.bonus', type: 'num' },
     { path: 'ads.prestige.cooldownMs', key: 'ads.prestige.cooldownMs', type: 'num' },
 
-    /* межстраничная реклама */
-    { path: 'interstitial.onPrestige', key: 'interstitial.onPrestige', type: 'bool' },
-    { path: 'interstitial.onBusinessUnlock', key: 'interstitial.onBusinessUnlock', type: 'bool' },
-    { path: 'interstitial.minGapMs', key: 'interstitial.minGapMs', type: 'num' },
-    { path: 'interstitial.skipFirstSessionMs', key: 'interstitial.skipFirstSessionMs', type: 'num' },
+    /* Ключей межстраничной рекламы здесь нет намеренно: показ убран по
+       п. 4.4, и включать его флагом из Консоли не должно быть можно —
+       иначе игра из Консоли снова становится нарушающей требования. */
 
     /* sticky-баннер: включается в Консоли, но прятать его в геймплее
        можно и из кода — рубильник лежит здесь и по умолчанию выключен */

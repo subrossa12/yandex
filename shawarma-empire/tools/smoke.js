@@ -555,6 +555,134 @@ function lbSdk() {
   };
 }
 
+/*
+ * Реклама (п. 4.4 и 4.5).
+ *
+ * Модерация отклонила игру за показ рекламы по игровому действию.
+ * «Шаурма Империя» — игра реального времени: точки работают и начисляют
+ * выручку непрерывно, поэтому полноэкранная реклама по действию в ней
+ * недопустима в принципе, каким бы удачным ни казался момент. Показов
+ * было два — при продаже сети и при открытии новой точки, — и оба убраны.
+ *
+ * Проверяем не отсутствие строчки в коде (это делает build.sh), а
+ * поведение: проходим оба сценария до конца и смотрим, что платформу
+ * о полноэкранной рекламе не попросили ни разу.
+ */
+async function adsChecks(browser) {
+  const save = richSave(0);
+  save.money = 9e14;                 // хватит и на открытие точки, и на уровни
+
+  const { page, errors } = await makePage(browser, SIZES[0]);
+  await page.addInitScript(adSdk());
+  await page.addInitScript((s) => {
+    try { localStorage.setItem('shawarma_empire_save_v1', JSON.stringify(s)); } catch (e) { /* ignore */ }
+  }, save);
+  await page.goto(GAME);
+  await page.waitForSelector('#loader[hidden]', { state: 'attached', timeout: 8000 });
+  await page.waitForTimeout(300);
+
+  /* Функции полноэкранного показа в игре быть не должно вообще. */
+  const hasApi = await page.evaluate(() => typeof SE.Platform.showInterstitial === 'function');
+  if (hasApi) fail('SE.Platform.showInterstitial всё ещё существует — флагом его можно вернуть');
+  else ok('полноэкранного показа нет даже в API платформы');
+
+  /* --- 1. Открытие новой точки --- */
+  const newCard = page.locator('.card.is-new').first();
+  if (!(await newCard.count())) {
+    fail('не нашлось точки, которую можно открыть — сценарий не проверен');
+  } else {
+    const name = (await newCard.locator('.card__name').textContent()).trim();
+    await newCard.locator('.btn--buy').click();
+    await page.waitForTimeout(800);
+    const shown = await page.evaluate(() => window.__fsAds.length);
+    if (shown) fail(`при открытии точки «${name}» показана полноэкранная реклама (п. 4.4)`);
+    else ok(`открытие точки «${name}» рекламу не вызывает`);
+  }
+
+  /* --- 2. Продажа сети (престиж) --- */
+  await page.locator('.tabbtn[data-tab="prestige"]').click();
+  await page.waitForTimeout(300);
+  const sell = page.locator('#prestigeBox .btn--danger');
+  if (!(await sell.count())) {
+    fail('кнопка продажи сети недоступна на развитом сейве — сценарий не проверен');
+  } else {
+    await sell.click();
+    await page.waitForTimeout(250);
+    await page.locator('.modal__buttons .btn--danger, .modal__buttons .btn--primary').last().click();
+    await page.waitForTimeout(1200);
+    const shown = await page.evaluate(() => window.__fsAds.length);
+    if (shown) fail('после продажи сети показана полноэкранная реклама (п. 4.4)');
+    else ok('продажа сети рекламу не вызывает');
+  }
+
+  /*
+   * --- 3. Ролик по-прежнему работает, но только по кнопке игрока ---
+   * Это п. 4.5.2: реклама как бонус по желанию, а не навязанный показ.
+   */
+  await page.locator('.tabbtn[data-tab="boosts"]').click();
+  await page.waitForTimeout(300);
+  const before = await page.evaluate(() => window.__rvAds.length);
+  if (before) fail('ролик запустился сам, без нажатия игрока');
+
+  const adBtn = page.locator('#adsList .btn--ad').first();
+  if (!(await adBtn.count())) {
+    fail('на вкладке бонусов нет ни одной кнопки с роликом');
+  } else {
+    await adBtn.click();
+    await page.waitForTimeout(500);
+    const after = await page.evaluate(() => window.__rvAds.length);
+    if (!after) fail('ролик не запустился по нажатию игрока');
+    else ok('ролик запускается только по кнопке игрока и остаётся единственной рекламой в игре');
+  }
+
+  const fs = await page.evaluate(() => window.__fsAds.length);
+  if (fs) fail(`за весь прогон платформу ${fs} раз попросили о полноэкранной рекламе`);
+  else ok('за весь прогон — ни одного запроса полноэкранной рекламы');
+
+  if (errors.length) errors.slice(0, 5).forEach((e) => fail('консоль: ' + e));
+  await page.close();
+}
+
+/* Заглушка SDK, которая записывает каждый запрос рекламы. */
+function adSdk() {
+  return function () {
+    window.__fsAds = [];
+    window.__rvAds = [];
+    window.YaGames = {
+      init: () => Promise.resolve({
+        environment: { i18n: { lang: 'ru' } },
+        getFlags: () => Promise.resolve({}),
+        getPlayer: () => Promise.resolve({
+          isAuthorized: () => true,
+          getData: () => Promise.resolve({}),
+          setData: () => Promise.resolve(),
+          getStats: () => Promise.resolve({}),
+          setStats: () => Promise.resolve()
+        }),
+        getPayments: () => Promise.reject(new Error('no payments')),
+        features: { LoadingAPI: { ready() {} }, GameplayAPI: { start() {}, stop() {} } },
+        adv: {
+          showFullscreenAdv: (o) => {
+            window.__fsAds.push(Date.now());
+            if (o && o.callbacks && o.callbacks.onClose) o.callbacks.onClose(true);
+          },
+          showRewardedVideo: (o) => {
+            window.__rvAds.push(Date.now());
+            const c = (o && o.callbacks) || {};
+            if (c.onOpen) c.onOpen();
+            if (c.onRewarded) c.onRewarded();
+            if (c.onClose) c.onClose();
+          },
+          showBannerAdv: () => {}
+        },
+        serverTime: () => Date.now(),
+        isAvailableMethod: () => Promise.resolve(true),
+        on() {}
+      })
+    };
+  };
+}
+
 async function run() {
   const browser = await chromium.launch({
     executablePath: '/opt/pw-browsers/chromium',
@@ -718,6 +846,9 @@ async function run() {
 
   console.log('\n== 8. Таблица лидеров (п. 8.2.2) ==');
   await leaderboardChecks(browser);
+
+  console.log('\n== 9. Реклама: ни одного показа по игровому действию (п. 4.4) ==');
+  await adsChecks(browser);
 
   await browser.close();
 
